@@ -1,0 +1,23 @@
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: mssql-kartoteka
+    environment:
+      ACCEPT_EULA: "Y"
+      # Haslo pochodzi z pliku .env (patrz .env.example) — nie z tego pliku.
+      MSSQL_SA_PASSWORD: ${MSSQL_PASSWORD:?ustaw MSSQL_PASSWORD w pliku .env}
+      MSSQL_PID: "Express"
+    ports:
+      - "1433:1433"
+    volumes:
+      - ./db:/db:ro
+      # Bez tego `docker compose down` kasowal cala baze razem z kontenerem.
+      - mssql-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  mssql-data:

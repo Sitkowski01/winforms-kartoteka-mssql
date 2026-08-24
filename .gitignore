@@ -1,0 +1,6 @@
+bin/
+obj/
+*.user
+
+# Sekrety — nigdy w repo
+.env
