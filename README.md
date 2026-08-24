@@ -11,7 +11,7 @@ Baza stoi w Dockerze, więc uruchomienie nie wymaga instalowania SQL Servera.
 ## Uruchomienie
 
 ```bash
-cp .env.example .env        # i wpisz własne hasło w MSSQL_PASSWORD
+cp .env.example .env        # uzupełnij MSSQL_PASSWORD (plik wzorcowy jest pusty)
 docker compose up -d        # MS SQL 2022 — hasło bierze z .env
 
 docker exec -e P="$MSSQL_PASSWORD" mssql-kartoteka \
@@ -31,7 +31,11 @@ z trzech źródeł, w tej kolejności:
 2. plik `.env` obok repozytorium — wygoda przy pracy lokalnej, jest w `.gitignore`,
 3. `MSSQL_HOST` / `MSSQL_DB` / `MSSQL_USER` / `MSSQL_PASSWORD`.
 
-Gdy hasła nie ma w żadnym z nich, aplikacja **odmawia startu** i mówi, czego brakuje —
+`.env.example` **nie zawiera żadnych wartości** — pola z wpisanymi „przykładowymi"
+hasłami zostają w historii repozytorium i podnoszą alarm w skanerach sekretów,
+nawet gdy nic nie znaczą.
+
+Gdy hasła nie ma w żadnym ze źródeł, aplikacja **odmawia startu** i mówi, czego brakuje —
 zamiast po cichu sięgnąć po wartość domyślną wpisaną w kod:
 
 ```
