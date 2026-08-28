@@ -134,10 +134,10 @@ co da się sprawdzić bez zależności zewnętrznych; reszta jest do odpalenia u
 
 ---
 
-## Co poprawiłem po pierwszej wersji
+## Co poprawiłem po przeglądzie kodu
 
-Pierwsza wersja przechodziła wszystkie testy i nadal miała jedenaście błędów.
-Dwa z nich powodowały **utratę danych**:
+Pierwszą wersję, która przechodziła wszystkie testy, przepuściłem przez przegląd
+kodu (Claude Code). Wyszło jedenaście rzeczy, dwie powodowały **utratę danych**:
 
 - **Przycisk „Nowy" nie wychodził z trybu edycji.** `ClearSelection()` nie rusza
   `CurrentCell`, więc zdarzenie `SelectionChanged` natychmiast przywracało `_edytowaneId`
