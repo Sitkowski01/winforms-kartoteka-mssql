@@ -1,5 +1,7 @@
 # Kartoteka kontrahentów — WinForms + MS SQL + zewnętrzne WebAPI
 
+[![CI](https://github.com/Sitkowski01/winforms-kartoteka-mssql/actions/workflows/ci.yml/badge.svg)](https://github.com/Sitkowski01/winforms-kartoteka-mssql/actions/workflows/ci.yml)
+
 Mała aplikacja okienkowa w C#: **CRUD na bazie MS SQL** plus **integracja z zewnętrznym
 WebAPI** (kursy walut Narodowego Banku Polskiego). Limit kredytowy kontrahenta widać
 i w złotówkach, i w euro po kursie pobranym z NBP.
@@ -126,12 +128,16 @@ bez otwierania okna — dzięki temu da się to sprawdzić także tam, gdzie nie
 === WSZYSTKO PRZESZLO ===
 ```
 
+CI kompiluje projekt i sprawdza formatowanie, ale tego testu **nie uruchamia** —
+potrzebuje żywej instancji MS SQL i odpowiedzi z `api.nbp.pl`. Automat pilnuje tego,
+co da się sprawdzić bez zależności zewnętrznych; reszta jest do odpalenia u siebie.
+
 ---
 
-## Co poprawiłem po przeglądzie kodu
+## Co poprawiłem po pierwszej wersji
 
-Pierwsza wersja przechodziła testy, ale przegląd znalazł jedenaście rzeczy — dwie z nich
-powodowały **utratę danych**:
+Pierwsza wersja przechodziła wszystkie testy i nadal miała jedenaście błędów.
+Dwa z nich powodowały **utratę danych**:
 
 - **Przycisk „Nowy" nie wychodził z trybu edycji.** `ClearSelection()` nie rusza
   `CurrentCell`, więc zdarzenie `SelectionChanged` natychmiast przywracało `_edytowaneId`
@@ -150,16 +156,24 @@ powodowały **utratę danych**:
   z powrotem obciętą wartość. Teraz zakres kontrolki równa się zakresowi kolumny,
   a test kontrolny sprawdza granicę 9 999 999 999,99.
 
-Reszta: `NbpClient` łapie też `JsonException` i `NotSupportedException` (proxy potrafi
-odpowiedzieć HTML-em ze statusem 200 i wywracało to całe odświeżanie listy), zniknął
-`Application.DoEvents()` i pole filtra jest blokowane na czas zapytania (dwa Entery
-startowały dwa równoległe odświeżenia, a zamknięcie okna w trakcie kończyło się
-wyjątkiem w bloku `catch`), wynik `ZaktualizujAsync`/`UsunAsync` jest sprawdzany
-(wcześniej „zapisano zmiany" pojawiało się też wtedy, gdy UPDATE nie trafił w żaden
-wiersz), `LimitEur` jest nullowalne i kolumna zostaje **pusta** zamiast pokazywać `0,00`,
-wieloznaczniki `LIKE` są ekranowane (`ESCAPE ''`), pola tekstowe mają `MaxLength`
-zgodne z kolumnami, test filtra porównuje bez uwzględniania wielkości liter (kolacja
-serwera jest CI/AI), a test cache'u jest pomijany, gdy kursu nie udało się pobrać.
+Pozostałe osiem:
+
+- **`NbpClient` łapie też `JsonException` i `NotSupportedException`.** Proxy potrafi
+  odpowiedzieć HTML-em ze statusem 200 — wcześniej wywracało to całe odświeżanie listy.
+- **Zniknął `Application.DoEvents()`, a pole filtra jest blokowane na czas zapytania.**
+  Dwa Entery pod rząd startowały dwa równoległe odświeżenia, a zamknięcie okna w trakcie
+  kończyło się wyjątkiem w bloku `catch`.
+- **Wynik `ZaktualizujAsync` i `UsunAsync` jest sprawdzany.** Wcześniej „zapisano zmiany"
+  pojawiało się także wtedy, gdy UPDATE nie trafił w żaden wiersz.
+- **`LimitEur` jest nullowalne**, więc przy braku kursu kolumna zostaje **pusta**
+  zamiast pokazywać `0,00` — co czytałoby się jak limit równy zeru.
+- **Wieloznaczniki `LIKE` są ekranowane** (`ESCAPE '\'`). Parametryzacja chroni przed
+  wstrzyknięciem SQL, ale nie odbiera znakom `%` i `_` ich specjalnego znaczenia.
+- **Pola tekstowe mają `MaxLength` zgodne z szerokością kolumn**, więc obcięcie nie
+  następuje dopiero przy zapisie.
+- **Test filtra porównuje bez uwzględniania wielkości liter** — kolacja serwera jest CI/AI.
+- **Test cache'u jest pomijany, gdy kursu nie udało się pobrać**, zamiast oblewać
+  z powodu niedostępności cudzego API.
 
 **Osobno, po zgłoszeniu ze skanera sekretów:** pierwsza wersja miała hasło do bazy
 wpisane jako wartość domyślna w `Program.cs`. Było zmyślone i dotyczyło lokalnego
@@ -171,7 +185,7 @@ Poza tym `db/schema.sql` jest teraz idempotentny — wcześniej bezwarunkowy `DR
 kasował zapełnioną kartotekę przy ponownym uruchomieniu polecenia z README — a baza
 dostała trwały wolumen, żeby `docker compose down` nie zabierał danych.
 
-## Uczciwie o dwóch rzeczach
+## Stos i zakres
 
 **To jest .NET 9, nie .NET Framework 4.8.** WinForms, ADO.NET, `SqlConnection`,
 `SqlCommand` i `SqlParameter` działają tak samo w obu, a układ projektu i sposób pracy
@@ -180,7 +194,9 @@ konfiguracji (`App.config` kontra zmienne środowiskowe) i sposobie publikacji.
 Interfejs jest tu budowany kodem, a nie designerem, żeby repo dało się przejrzeć
 bez otwierania Visual Studio.
 
-**Piszę w tym po raz pierwszy.** Ta aplikacja powstała jako sposób na zamknięcie luki,
-a nie jako dowód wieloletniej praktyki w C#. Język kompilowany i statycznie typowany mam
-przećwiczony na C/C++ ze stażu embedded, a wzorce — repozytorium, parametryzowany dostęp
-do danych, obsługa błędów zewnętrznego API — są te same niezależnie od składni.
+**C# nie jest moim głównym językiem.** Statycznie typowane języki kompilowane mam
+z C/C++ ze stażu embedded, a wzorce, które widać w tym repozytorium — warstwa
+repozytorium nad bazą, wyłącznie parametryzowany dostęp do danych, ograniczenia
+trzymane po stronie serwera, obsługa awarii zewnętrznego API — przenoszą się między
+językami. Ta aplikacja pokazuje, że potrafię je odtworzyć w nowym stosie i znaleźć
+w tym własne błędy, łącznie z dwoma powodującymi utratę danych.

@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    # net9.0-windows z WinForms — kompilacja wymaga runnera Windows.
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Przywrocenie zaleznosci
+        run: dotnet restore src/KartotekaKontrahentow.csproj
+
+      - name: Formatowanie
+        run: dotnet format src/KartotekaKontrahentow.csproj --verify-no-changes
+
+      - name: Kompilacja
+        run: dotnet build src/KartotekaKontrahentow.csproj -c Release --no-restore
+
+      # Testu kontrolnego (dotnet run -- --smoke) nie da sie tu uruchomic:
+      # potrzebuje zywej instancji MS SQL i odpowiedzi z api.nbp.pl.
+      # CI pilnuje tego, co da sie sprawdzic bez zaleznosci zewnetrznych.
